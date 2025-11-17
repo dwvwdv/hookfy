@@ -5,7 +5,7 @@ import '../providers/app_config_provider.dart';
 import 'app_selection_page.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();

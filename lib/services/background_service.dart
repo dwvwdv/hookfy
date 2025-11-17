@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'preferences_service.dart';
 
 class BackgroundService {
   static final BackgroundService instance = BackgroundService._init();
@@ -15,19 +15,13 @@ class BackgroundService {
         channelDescription: 'This notification appears when Notifly is monitoring notifications.',
         channelImportance: NotificationChannelImportance.LOW,
         priority: NotificationPriority.LOW,
-        iconData: const NotificationIconData(
-          resType: ResourceType.mipmap,
-          resPrefix: ResourcePrefix.ic,
-          name: 'launcher',
-        ),
       ),
       iosNotificationOptions: const IOSNotificationOptions(
         showNotification: true,
         playSound: false,
       ),
-      foregroundTaskOptions: const ForegroundTaskOptions(
-        interval: 5000,
-        isOnceEvent: false,
+      foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.repeat(5000),
         autoRunOnBoot: true,
         allowWakeLock: true,
         allowWifiLock: false,
@@ -54,7 +48,7 @@ class BackgroundService {
   }
 
   Future<bool> isRunning() async {
-    return await FlutterForegroundTask.isRunningService;
+    return FlutterForegroundTask.isRunningService;
   }
 
   Future<void> updateNotification({
@@ -74,36 +68,40 @@ void startCallback() {
 }
 
 class NotificationTaskHandler extends TaskHandler {
-  int _notificationCount = 0;
+  final int _notificationCount = 0;
 
   @override
-  Future<void> onStart(DateTime timestamp, SendPort? sendPort) async {
+  Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     print('Background service started');
   }
 
   @override
-  Future<void> onEvent(DateTime timestamp, SendPort? sendPort) async {
+  void onRepeatEvent(DateTime timestamp) {
     // This is called periodically based on the interval
     // You can use this to perform periodic tasks
 
     // Send data to main isolate if needed
-    sendPort?.send(_notificationCount);
+    final data = {
+      'notificationCount': _notificationCount,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+    };
+    FlutterForegroundTask.sendDataToMain(data);
   }
 
   @override
-  Future<void> onDestroy(DateTime timestamp, SendPort? sendPort) async {
+  Future<void> onDestroy(DateTime timestamp) async {
     print('Background service destroyed');
-  }
-
-  @override
-  void onButtonPressed(String id) {
-    // Handle notification button presses
-    print('Button pressed: $id');
   }
 
   @override
   void onNotificationPressed() {
     // Handle notification press
     FlutterForegroundTask.launchApp('/');
+  }
+
+  @override
+  void onNotificationButtonPressed(String id) {
+    // Handle notification button presses
+    print('Button pressed: $id');
   }
 }

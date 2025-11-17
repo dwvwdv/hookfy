@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_config_provider.dart';
 
 class AppSelectionPage extends StatefulWidget {
-  const AppSelectionPage({Key? key}) : super(key: key);
+  const AppSelectionPage({super.key});
 
   @override
   State<AppSelectionPage> createState() => _AppSelectionPageState();

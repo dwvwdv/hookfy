@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'services/preferences_service.dart';
 import 'services/notification_service.dart';
 import 'services/background_service.dart';
@@ -25,7 +24,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -44,25 +43,9 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
           useMaterial3: true,
         ),
-        home: const WithForegroundTask(child: HomePage()),
+        home: const HomePage(),
         debugShowCheckedModeBanner: false,
       ),
-    );
-  }
-}
-
-class WithForegroundTask extends StatelessWidget {
-  const WithForegroundTask({
-    Key? key,
-    required this.child,
-  }) : super(key: key);
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return WithForegroundTask(
-      child: child,
     );
   }
 }
