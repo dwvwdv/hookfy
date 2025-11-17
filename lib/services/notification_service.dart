@@ -36,8 +36,8 @@ class NotificationService {
               return;
             }
 
-            // Save to database
-            await DatabaseService.instance.insertNotification(notification);
+            // Note: Notification is already saved to database in native layer (NotificationListener.kt)
+            // No need to save again here to avoid duplicates
 
             // Send to webhook
             await WebhookService.instance.sendNotification(notification);
