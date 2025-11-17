@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../models/notification_model.dart';
-import 'database_service.dart';
 import 'webhook_service.dart';
 import 'preferences_service.dart';
 
