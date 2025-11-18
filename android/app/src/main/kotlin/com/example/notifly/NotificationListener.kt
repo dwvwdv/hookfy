@@ -1,11 +1,13 @@
 package com.example.notifly
 
 import android.app.Notification
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
@@ -18,6 +20,48 @@ class NotificationListener : NotificationListenerService() {
         const val EXTRA_NOTIFICATION_DATA = "notification_data"
     }
 
+    /**
+     * Check if an app is enabled for monitoring based on SharedPreferences
+     * Logic:
+     * 1. Check if app has specific config in app_configs - use that config
+     * 2. If no specific config, fallback to monitor_all_apps setting
+     */
+    private fun isAppEnabled(packageName: String): Boolean {
+        try {
+            val prefs = applicationContext.getSharedPreferences(
+                "FlutterSharedPreferences",
+                Context.MODE_PRIVATE
+            )
+
+            // First, check if there's an app-specific config
+            val appConfigsJson = prefs.getString("flutter.app_configs", null)
+
+            if (appConfigsJson != null) {
+                val appConfigsArray = JSONArray(appConfigsJson)
+
+                // Look for this specific app's configuration
+                for (i in 0 until appConfigsArray.length()) {
+                    val config = appConfigsArray.getJSONObject(i)
+                    if (config.getString("packageName") == packageName) {
+                        val isEnabled = config.getBoolean("isEnabled")
+                        Log.d(TAG, "App $packageName has specific config - isEnabled: $isEnabled")
+                        return isEnabled
+                    }
+                }
+            }
+
+            // No specific config found, fallback to monitor_all_apps setting
+            val monitorAllApps = prefs.getBoolean("flutter.monitor_all_apps", true)
+            Log.d(TAG, "App $packageName not in config - using monitor_all_apps: $monitorAllApps")
+            return monitorAllApps
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking if app is enabled: $e", e)
+            // Default to true to avoid blocking notifications on errors
+            return true
+        }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
 
@@ -27,6 +71,12 @@ class NotificationListener : NotificationListenerService() {
 
             // Skip our own notifications
             if (packageName == applicationContext.packageName) {
+                return
+            }
+
+            // Check if this app is enabled for monitoring
+            if (!isAppEnabled(packageName)) {
+                Log.d(TAG, "Notification from $packageName skipped - app monitoring disabled")
                 return
             }
 
