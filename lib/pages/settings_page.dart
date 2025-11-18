@@ -12,46 +12,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final _webhookUrlController = TextEditingController();
-  bool _isTesting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final settingsProvider = context.read<SettingsProvider>();
-    _webhookUrlController.text = settingsProvider.webhookUrl;
-  }
-
-  @override
-  void dispose() {
-    _webhookUrlController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _testWebhook() async {
-    setState(() {
-      _isTesting = true;
-    });
-
-    final settingsProvider = context.read<SettingsProvider>();
-    final success = await settingsProvider.testWebhook();
-
-    setState(() {
-      _isTesting = false;
-    });
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Webhook test successful!' : 'Webhook test failed!',
-        ),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final settingsProvider = context.watch<SettingsProvider>();
@@ -66,53 +26,6 @@ class _SettingsPageState extends State<SettingsPage> {
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
-              'Webhook Configuration',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SwitchListTile(
-            title: const Text('Enable Webhook'),
-            subtitle: const Text('Send notifications to webhook URL'),
-            value: settingsProvider.webhookEnabled,
-            onChanged: (value) {
-              settingsProvider.toggleWebhook(value);
-            },
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _webhookUrlController,
-              decoration: const InputDecoration(
-                labelText: 'Webhook URL',
-                hintText: 'https://your-server.com/webhook',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) {
-                settingsProvider.setWebhookUrl(value);
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: _isTesting ? null : _testWebhook,
-              icon: _isTesting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.send),
-              label: const Text('Test Webhook'),
-            ),
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
               'App Monitoring',
               style: TextStyle(
                 fontSize: 18,
@@ -121,22 +34,17 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           SwitchListTile(
-            title: const Text('Monitor All Apps'),
-            subtitle: Text(
-              appConfigProvider.monitorAllApps
-                  ? 'Monitoring all apps'
-                  : 'Monitoring ${appConfigProvider.enabledAppCount} apps',
-            ),
-            value: appConfigProvider.monitorAllApps,
+            title: const Text('Enable Webhook'),
+            subtitle: const Text('Send notifications to webhook URLs'),
+            value: settingsProvider.webhookEnabled,
             onChanged: (value) {
-              appConfigProvider.toggleMonitorAllApps(value);
+              settingsProvider.toggleWebhook(value);
             },
           ),
           ListTile(
             title: const Text('Select Apps'),
             subtitle: Text('${appConfigProvider.enabledAppCount} apps enabled'),
             trailing: const Icon(Icons.chevron_right),
-            enabled: !appConfigProvider.monitorAllApps,
             onTap: () {
               Navigator.push(
                 context,
