@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/notification_model.dart';
+import 'preferences_service.dart';
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._init();
@@ -67,13 +68,23 @@ class DatabaseService {
       offset: offset,
     );
 
-    return maps.map((map) => NotificationModel.fromDatabase(map)).toList();
+    final allNotifications = maps.map((map) => NotificationModel.fromDatabase(map)).toList();
+
+    // Filter notifications based on app enabled status
+    return allNotifications.where((notification) {
+      return PreferencesService.instance.isAppEnabled(notification.packageName);
+    }).toList();
   }
 
   Future<List<NotificationModel>> getNotificationsByPackage(
     String packageName, {
     int limit = 100,
   }) async {
+    // Check if app is enabled before querying
+    if (!PreferencesService.instance.isAppEnabled(packageName)) {
+      return [];
+    }
+
     final db = await database;
     final maps = await db.query(
       'notifications',
