@@ -38,8 +38,10 @@ class NotificationService {
             // Note: Notification is already saved to database in native layer (NotificationListener.kt)
             // No need to save again here to avoid duplicates
 
-            // Send to webhook
-            await WebhookService.instance.sendNotification(notification);
+            // Send to webhook (only if webhook is enabled)
+            if (PreferencesService.instance.getWebhookEnabled()) {
+              await WebhookService.instance.sendNotification(notification);
+            }
 
             // Notify listeners
             _notificationController.add(notification);
