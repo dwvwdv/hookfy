@@ -29,7 +29,17 @@ class WebhookService {
       );
       final appConfig = matchingConfigs.isNotEmpty ? matchingConfigs.first : null;
 
-      final webhookUrls = appConfig?.webhookUrls ?? [];
+      // Use app-specific webhook URLs if configured, otherwise use global webhook URL
+      List<String> webhookUrls = appConfig?.webhookUrls ?? [];
+
+      // If no app-specific URLs, try using global webhook URL
+      if (webhookUrls.isEmpty) {
+        final globalWebhookUrl = prefs.getWebhookUrl();
+        if (globalWebhookUrl != null && globalWebhookUrl.isNotEmpty) {
+          webhookUrls = [globalWebhookUrl];
+        }
+      }
+
       if (webhookUrls.isEmpty) {
         return false;
       }
