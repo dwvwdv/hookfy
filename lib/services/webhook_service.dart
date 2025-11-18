@@ -24,10 +24,10 @@ class WebhookService {
 
       // Get app-specific webhook URL or fall back to global webhook URL
       final appConfigs = prefs.getAppConfigs();
-      final appConfig = appConfigs.firstWhere(
+      final matchingConfigs = appConfigs.where(
         (c) => c.packageName == notification.packageName,
-        orElse: () => null,
       );
+      final appConfig = matchingConfigs.isNotEmpty ? matchingConfigs.first : null;
 
       final webhookUrl = appConfig?.webhookUrl ?? prefs.getWebhookUrl();
       if (webhookUrl == null || webhookUrl.isEmpty) {
