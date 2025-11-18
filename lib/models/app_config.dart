@@ -2,21 +2,23 @@ class AppConfig {
   final String packageName;
   final String appName;
   final bool isEnabled;
-  final String? webhookUrl;
+  final List<String> webhookUrls;
 
   AppConfig({
     required this.packageName,
     required this.appName,
     required this.isEnabled,
-    this.webhookUrl,
-  });
+    List<String>? webhookUrls,
+  }) : webhookUrls = webhookUrls ?? [];
 
   factory AppConfig.fromJson(Map<String, dynamic> json) {
     return AppConfig(
       packageName: json['packageName'] as String,
       appName: json['appName'] as String,
       isEnabled: json['isEnabled'] as bool,
-      webhookUrl: json['webhookUrl'] as String?,
+      webhookUrls: json['webhookUrls'] != null
+          ? List<String>.from(json['webhookUrls'] as List)
+          : (json['webhookUrl'] != null ? [json['webhookUrl'] as String] : null),
     );
   }
 
@@ -25,7 +27,7 @@ class AppConfig {
       'packageName': packageName,
       'appName': appName,
       'isEnabled': isEnabled,
-      'webhookUrl': webhookUrl,
+      'webhookUrls': webhookUrls,
     };
   }
 
@@ -33,13 +35,13 @@ class AppConfig {
     String? packageName,
     String? appName,
     bool? isEnabled,
-    String? webhookUrl,
+    List<String>? webhookUrls,
   }) {
     return AppConfig(
       packageName: packageName ?? this.packageName,
       appName: appName ?? this.appName,
       isEnabled: isEnabled ?? this.isEnabled,
-      webhookUrl: webhookUrl ?? this.webhookUrl,
+      webhookUrls: webhookUrls ?? this.webhookUrls,
     );
   }
 }

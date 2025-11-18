@@ -12,52 +12,107 @@ class AppSelectionPage extends StatefulWidget {
 class _AppSelectionPageState extends State<AppSelectionPage> {
   String _searchQuery = '';
 
-  void _showWebhookDialog(BuildContext context, String packageName, String appName, String? currentWebhookUrl) {
-    final TextEditingController controller = TextEditingController(text: currentWebhookUrl ?? '');
+  void _showWebhookDialog(BuildContext context, String packageName, String appName, List<String> currentWebhookUrls) {
+    final List<TextEditingController> controllers = currentWebhookUrls.map((url) => TextEditingController(text: url)).toList();
+    if (controllers.isEmpty) {
+      controllers.add(TextEditingController());
+    }
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('Webhook for $appName'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Set a custom webhook URL for this app. Leave empty to use the global webhook URL.',
-              style: TextStyle(fontSize: 14),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Webhooks for $appName'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Configure webhook URLs for this app. You can add multiple URLs.',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: controllers.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: controllers[index],
+                                decoration: InputDecoration(
+                                  labelText: 'Webhook URL ${index + 1}',
+                                  hintText: 'https://your-server.com/webhook',
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () {
+                                setDialogState(() {
+                                  controllers[index].dispose();
+                                  controllers.removeAt(index);
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add URL'),
+                  onPressed: () {
+                    setDialogState(() {
+                      controllers.add(TextEditingController());
+                    });
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Webhook URL',
-                hintText: 'https://your-server.com/webhook',
-                border: OutlineInputBorder(),
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                for (var controller in controllers) {
+                  controller.dispose();
+                }
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                final urls = controllers
+                    .map((c) => c.text.trim())
+                    .where((text) => text.isNotEmpty)
+                    .toList();
+
+                final appConfigProvider = context.read<AppConfigProvider>();
+                appConfigProvider.updateAppWebhookUrls(packageName, urls);
+
+                for (var controller in controllers) {
+                  controller.dispose();
+                }
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${urls.length} webhook URL(s) updated')),
+                );
+              },
+              child: const Text('Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              final appConfigProvider = context.read<AppConfigProvider>();
-              appConfigProvider.updateAppWebhook(
-                packageName,
-                controller.text.isEmpty ? null : controller.text,
-              );
-              Navigator.pop(dialogContext);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Webhook URL updated')),
-              );
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -151,9 +206,9 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
                                     config.packageName,
                                     style: const TextStyle(fontSize: 12),
                                   ),
-                                  if (config.webhookUrl != null && config.webhookUrl!.isNotEmpty)
+                                  if (config.webhookUrls.isNotEmpty)
                                     Text(
-                                      'Custom webhook: ${config.webhookUrl}',
+                                      '${config.webhookUrls.length} webhook URL(s) configured',
                                       style: TextStyle(
                                         fontSize: 10,
                                         color: Colors.blue.shade700,
@@ -168,7 +223,7 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
                                   IconButton(
                                     icon: Icon(
                                       Icons.webhook,
-                                      color: config.webhookUrl != null && config.webhookUrl!.isNotEmpty
+                                      color: config.webhookUrls.isNotEmpty
                                           ? Colors.blue
                                           : Colors.grey,
                                     ),
@@ -177,7 +232,7 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
                                         context,
                                         config.packageName,
                                         config.appName,
-                                        config.webhookUrl,
+                                        config.webhookUrls,
                                       );
                                     },
                                   ),

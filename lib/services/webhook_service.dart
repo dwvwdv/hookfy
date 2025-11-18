@@ -22,15 +22,15 @@ class WebhookService {
         return false;
       }
 
-      // Get app-specific webhook URL or fall back to global webhook URL
+      // Get app-specific webhook URLs
       final appConfigs = prefs.getAppConfigs();
       final matchingConfigs = appConfigs.where(
         (c) => c.packageName == notification.packageName,
       );
       final appConfig = matchingConfigs.isNotEmpty ? matchingConfigs.first : null;
 
-      final webhookUrl = appConfig?.webhookUrl ?? prefs.getWebhookUrl();
-      if (webhookUrl == null || webhookUrl.isEmpty) {
+      final webhookUrls = appConfig?.webhookUrls ?? [];
+      if (webhookUrls.isEmpty) {
         return false;
       }
 
@@ -56,23 +56,34 @@ class WebhookService {
         ...prefs.getWebhookHeaders(),
       };
 
-      // Send POST request
-      final response = await http.post(
-        Uri.parse(webhookUrl),
-        headers: headers,
-        body: jsonEncode(payload),
-      ).timeout(
-        const Duration(seconds: 10),
+      // Send POST requests to all webhook URLs
+      final results = await Future.wait(
+        webhookUrls.map((url) async {
+          try {
+            final response = await http.post(
+              Uri.parse(url),
+              headers: headers,
+              body: jsonEncode(payload),
+            ).timeout(
+              const Duration(seconds: 10),
+            );
+
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+              print('Webhook sent successfully to $url: ${response.statusCode}');
+              return true;
+            } else {
+              print('Webhook failed for $url: ${response.statusCode} - ${response.body}');
+              return false;
+            }
+          } catch (e) {
+            print('Webhook error for $url: $e');
+            return false;
+          }
+        }),
       );
 
-      // Check response
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        print('Webhook sent successfully: ${response.statusCode}');
-        return true;
-      } else {
-        print('Webhook failed: ${response.statusCode} - ${response.body}');
-        return false;
-      }
+      // Return true if at least one webhook succeeded
+      return results.any((result) => result);
     } catch (e) {
       print('Webhook error: $e');
       return false;
