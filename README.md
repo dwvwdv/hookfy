@@ -1,81 +1,81 @@
 # Hookfy
 
-一个使用 Flutter 开发的 Android 通知监测应用，支持 Webhook 推送功能。
+一個使用 Flutter 開發的 Android 通知監測應用，支援 Webhook 推送功能。
 
 ## 功能特性
 
-1. **通知监测** - 监测 Android 手机上的所有应用通知
-2. **Webhook 推送** - 当监测到新通知时，自动发送 HTTP 请求到指定的 Webhook URL
-3. **后台运行** - 支持后台持续运行，即使应用关闭也能继续监测
-4. **应用筛选** - 可以选择监测所有应用或仅监测特定应用
-5. **本地存储** - 所有通知都会保存到本地数据库
-6. **易于扩展** - 使用 Flutter 开发，后续可轻松扩展到 iOS 平台
+1. **通知監測** - 監測 Android 手機上的所有應用通知
+2. **Webhook 推送** - 當監測到新通知時，自動傳送 HTTP 請求到指定的 Webhook URL
+3. **後台運行** - 支援後台持續運行，即使應用關閉也能繼續監測
+4. **應用篩選** - 可以選擇監測所有應用或僅監測特定應用
+5. **本地儲存** - 所有通知都會儲存到本地資料庫
+6. **易於擴展** - 使用 Flutter 開發，後續可輕鬆擴展到 iOS 平台
 
-## 系统要求
+## 系統要求
 
 - Android 6.0 (API 23) 或更高版本
-- 需要授予通知访问权限
+- 需要授予通知存取權限
 
-## 下载 APK
+## 下載 APK
 
-### 从 GitHub Releases 下载（推荐）
+### 從 GitHub Releases 下載（推薦）
 
-前往 [Releases](../../releases) 页面下载最新版本的 APK 文件，直接安装到 Android 设备即可。
+前往 [Releases](../../releases) 頁面下載最新版本的 APK 檔案，直接安裝到 Android 裝置即可。
 
-## 开发者指南
+## 開發者指南
 
-### 自动构建和发布
+### 自動構建和發布
 
-本项目配置了 GitHub Actions CI/CD，可自动构建和发布 APK。详见 [RELEASE.md](RELEASE.md)。
+本專案配置了 GitHub Actions CI/CD，可自動構建和發布 APK。詳見 [RELEASE.md](RELEASE.md)。
 
-**快速发布新版本**：
+**快速發布新版本**：
 ```bash
-# 1. 更新版本号（编辑 pubspec.yaml）
-# 2. 创建并推送 tag
+# 1. 更新版本號（編輯 pubspec.yaml）
+# 2. 建立並推送 tag
 git tag v1.0.1
 git push origin v1.0.1
-# 3. GitHub Actions 会自动构建并发布 APK
+# 3. GitHub Actions 會自動構建並發布 APK
 ```
 
-### 从源码构建
+### 從原始碼構建
 
-### 1. 克隆项目
+### 1. 複製專案
 
 ```bash
 git clone <repository-url>
 cd hookfy
 ```
 
-### 2. 安装依赖
+### 2. 安裝依賴
 
 ```bash
 flutter pub get
 ```
 
-### 3. 运行应用
+### 3. 運行應用
 
 ```bash
 flutter run
 ```
 
-### 4. 授予权限
+### 4. 授予權限
 
-首次运行时，应用会提示您授予通知访问权限。请按照以下步骤操作：
+首次運行時，應用會提示您授予通知存取權限。請按照以下步驟操作：
 
-1. 点击"Grant Permission"按钮
-2. 在系统设置中找到"Hookfy"
-3. 开启通知访问权限
+1. 點擊「Grant Permission」按鈕
+2. 在系統設定中找到「Hookfy」
+3. 開啟通知存取權限
 
 ### 5. 配置 Webhook
 
-1. 打开应用设置页面
-2. 输入您的 Webhook URL（例如：`https://your-server.com/webhook`）
-3. 开启"Enable Webhook"开关
-4. 可选：点击"Test Webhook"测试连接
+1. 開啟應用設定頁面
+2. 輸入您的 Webhook URL（例如：`https://your-server.com/webhook`）
+3. 開啟「Enable Webhook」開關
+4. 可選：點擊「Test Webhook」測試連接
 
-## Webhook 数据格式
+## Webhook 資料格式
 
-当检测到新通知时，应用会发送以下格式的 JSON 数据到您的 Webhook URL：
+當檢測到新通知時，應用會傳送以下格式的 JSON 資料到您的 Webhook URL：
 
 ```json
 {
@@ -94,93 +94,93 @@ flutter run
 }
 ```
 
-## 应用筛选
+## 應用篩選
 
-### 监测所有应用
+### 監測所有應用
 
-默认情况下，应用会监测所有应用的通知。
+預設情況下，應用會監測所有應用的通知。
 
-### 监测特定应用
+### 監測特定應用
 
-1. 进入设置页面
-2. 关闭"Monitor All Apps"开关
-3. 点击"Select Apps"
-4. 选择您想要监测的应用
+1. 進入設定頁面
+2. 關閉「Monitor All Apps」開關
+3. 點擊「Select Apps」
+4. 選擇您想要監測的應用
 
-## 后台运行
+## 後台運行
 
-应用支持后台持续运行：
+應用支援後台持續運行：
 
-1. 在设置中开启"Run in Background"
-2. 应用会在通知栏显示一个前台服务通知
-3. 即使关闭应用，通知监测仍会继续
+1. 在設定中開啟「Run in Background」
+2. 應用會在通知欄顯示一個前台服務通知
+3. 即使關閉應用，通知監測仍會繼續
 
-## 项目结构
+## 專案結構
 
 ```
 lib/
-├── models/           # 数据模型
+├── models/           # 資料模型
 │   ├── notification_model.dart
 │   └── app_config.dart
-├── services/         # 服务层
+├── services/         # 服務層
 │   ├── notification_service.dart
 │   ├── database_service.dart
 │   ├── preferences_service.dart
 │   ├── webhook_service.dart
 │   └── background_service.dart
-├── providers/        # 状态管理
+├── providers/        # 狀態管理
 │   ├── settings_provider.dart
 │   └── app_config_provider.dart
-├── pages/           # UI 页面
+├── pages/           # UI 頁面
 │   ├── home_page.dart
 │   ├── settings_page.dart
 │   └── app_selection_page.dart
-└── main.dart        # 入口文件
+└── main.dart        # 入口檔案
 
 android/
 └── app/src/main/kotlin/com/lazyrhythm/hookfy/
     ├── MainActivity.kt
-    ├── NotificationListener.kt  # 通知监听服务
-    └── BootReceiver.kt         # 开机自启动
+    ├── NotificationListener.kt  # 通知監聽服務
+    └── BootReceiver.kt         # 開機自啟動
 ```
 
-## 技术栈
+## 技術棧
 
 - **Flutter** - 跨平台 UI 框架
-- **Provider** - 状态管理
-- **SQLite** - 本地数据库
-- **SharedPreferences** - 配置存储
-- **HTTP** - Webhook 请求
-- **WorkManager & Foreground Task** - 后台服务
+- **Provider** - 狀態管理
+- **SQLite** - 本地資料庫
+- **SharedPreferences** - 配置儲存
+- **HTTP** - Webhook 請求
+- **WorkManager & Foreground Task** - 後台服務
 
-## 权限说明
+## 權限說明
 
-应用需要以下权限：
+應用需要以下權限：
 
-- **通知访问权限** - 用于监测其他应用的通知
-- **网络权限** - 用于发送 Webhook 请求
-- **前台服务权限** - 用于后台持续运行
-- **开机自启动权限** - 用于系统重启后自动启动服务
+- **通知存取權限** - 用於監測其他應用的通知
+- **網路權限** - 用於傳送 Webhook 請求
+- **前台服務權限** - 用於後台持續運行
+- **開機自啟動權限** - 用於系統重啟後自動啟動服務
 
-## 隐私和安全
+## 隱私和安全
 
-- 所有通知数据仅存储在本地设备
-- Webhook URL 和配置信息存储在本地
-- 应用不会收集或上传任何用户数据到第三方服务器
-- 通知数据仅在启用 Webhook 功能时发送到用户指定的 URL
+- 所有通知資料僅儲存在本地裝置
+- Webhook URL 和配置資訊儲存在本地
+- 應用不會收集或上傳任何使用者資料到第三方伺服器
+- 通知資料僅在啟用 Webhook 功能時傳送到使用者指定的 URL
 
-## 开发计划
+## 開發計畫
 
-- [ ] iOS 版本支持
-- [ ] 自定义 Webhook 请求头
-- [ ] 通知过滤规则
-- [ ] 数据导出功能
-- [ ] 通知统计和分析
+- [ ] iOS 版本支援
+- [ ] 自訂 Webhook 請求標頭
+- [ ] 通知過濾規則
+- [ ] 資料匯出功能
+- [ ] 通知統計和分析
 
-## 许可证
+## 許可證
 
 MIT License
 
-## 贡献
+## 貢獻
 
-欢迎提交 Issue 和 Pull Request！
+歡迎提交 Issue 和 Pull Request！

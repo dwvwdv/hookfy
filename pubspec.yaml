@@ -46,6 +46,6 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/icon/app_icon.png"
-  # 自适应图标配置（Android 8.0+）
+  # 自適應圖示配置（Android 8.0+）
   adaptive_icon_background: "#1A1A1A"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
