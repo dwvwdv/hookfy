@@ -351,6 +351,9 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                               onDismissed: (direction) async {
+                                // Capture ScaffoldMessenger before async gap
+                                final scaffoldMessenger = ScaffoldMessenger.of(context);
+
                                 // Remove from database
                                 await DatabaseService.instance.deleteNotification(notification.id!);
 
@@ -361,7 +364,7 @@ class _HomePageState extends State<HomePage> {
 
                                 // Show snackbar
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  scaffoldMessenger.showSnackBar(
                                     SnackBar(
                                       content: Text('已刪除 ${notification.appName} 的通知'),
                                       duration: const Duration(seconds: 2),
