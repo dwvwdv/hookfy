@@ -445,11 +445,22 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          // Determine what will be cleared based on filter mode
+          String dialogContent;
+          if (_filterMode == FilterMode.showAll) {
+            dialogContent = 'Are you sure you want to clear all notifications?';
+          } else if (_filterMode == FilterMode.detectingApp) {
+            dialogContent = 'Are you sure you want to clear notifications from enabled apps?';
+          } else {
+            final appCount = _selectedPackages.length;
+            dialogContent = 'Are you sure you want to clear notifications from $appCount selected app${appCount > 1 ? 's' : ''}?';
+          }
+
           final confirmed = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('Clear Notifications'),
-              content: const Text('Are you sure you want to clear all notifications?'),
+              content: Text(dialogContent),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
@@ -464,7 +475,21 @@ class _HomePageState extends State<HomePage> {
           );
 
           if (confirmed == true) {
-            await DatabaseService.instance.clearAllNotifications();
+            if (_filterMode == FilterMode.showAll) {
+              // Clear all notifications
+              await DatabaseService.instance.clearAllNotifications();
+            } else if (_filterMode == FilterMode.detectingApp) {
+              // Clear only notifications from enabled apps
+              final enabledPackages = _notifications
+                  .where((n) => PreferencesService.instance.isAppEnabled(n.packageName))
+                  .map((n) => n.packageName)
+                  .toSet()
+                  .toList();
+              await DatabaseService.instance.deleteNotificationsByPackages(enabledPackages);
+            } else {
+              // Clear only notifications from selected apps
+              await DatabaseService.instance.deleteNotificationsByPackages(_selectedPackages.toList());
+            }
             await _loadNotifications();
           }
         },
