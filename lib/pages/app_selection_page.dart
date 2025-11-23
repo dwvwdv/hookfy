@@ -138,14 +138,14 @@ class _AppSelectionPageState extends State<AppSelectionPage> {
                                               newTestingStates[i] = testingStates[i];
                                             }
                                             if (testResults.containsKey(i)) {
-                                              newTestResults[i] = testResults[i];
+                                              newTestResults[i] = testResults[i]!;
                                             }
                                           } else if (i >= index) {
                                             if (testingStates.containsKey(i + 1)) {
                                               newTestingStates[i] = testingStates[i + 1];
                                             }
                                             if (testResults.containsKey(i + 1)) {
-                                              newTestResults[i] = testResults[i + 1];
+                                              newTestResults[i] = testResults[i + 1]!;
                                             }
                                           }
                                         }
