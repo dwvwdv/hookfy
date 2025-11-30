@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../models/notification_model.dart';
-import 'webhook_service.dart';
 import 'preferences_service.dart';
 
 class NotificationService {
@@ -36,23 +35,10 @@ class NotificationService {
             }
 
             // Note: Notification is already saved to database in native layer (NotificationListener.kt)
-            // No need to save again here to avoid duplicates
+            // Webhook is also sent automatically in native layer (WebhookSender.kt)
+            // Flutter layer only handles UI updates and manual retry
 
-            // Send to webhook (only if webhook is enabled)
-            if (PreferencesService.instance.getWebhookEnabled()) {
-              final success = await WebhookService.instance.sendNotification(notification);
-
-              // If webhook failed and we have a notification ID, send failure notification
-              if (!success && notification.id != null) {
-                await _sendWebhookFailureNotification(
-                  notification.id!,
-                  notification.appName,
-                  notification.title,
-                );
-              }
-            }
-
-            // Notify listeners
+            // Notify listeners for UI updates
             _notificationController.add(notification);
           }
         } catch (e) {
@@ -63,18 +49,6 @@ class NotificationService {
         print('Notification stream error: $error');
       },
     );
-  }
-
-  Future<void> _sendWebhookFailureNotification(int notificationId, String appName, String title) async {
-    try {
-      await platform.invokeMethod('sendWebhookFailureNotification', {
-        'notificationId': notificationId,
-        'appName': appName,
-        'title': title,
-      });
-    } catch (e) {
-      print('Error sending webhook failure notification: $e');
-    }
   }
 
   Future<bool> checkNotificationPermission() async {
