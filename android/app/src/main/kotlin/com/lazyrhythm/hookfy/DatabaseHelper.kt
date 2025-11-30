@@ -109,4 +109,29 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             -1L
         }
     }
+
+    /**
+     * Update webhook status for a notification
+     */
+    fun updateWebhookStatus(notificationId: Long, status: String): Boolean {
+        return try {
+            val db = writableDatabase
+            val values = ContentValues().apply {
+                put(COLUMN_WEBHOOK_STATUS, status)
+            }
+
+            val rowsAffected = db.update(
+                TABLE_NOTIFICATIONS,
+                values,
+                "$COLUMN_ID = ?",
+                arrayOf(notificationId.toString())
+            )
+
+            Log.d(TAG, "Updated webhook status for notification $notificationId to $status")
+            rowsAffected > 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating webhook status", e)
+            false
+        }
+    }
 }

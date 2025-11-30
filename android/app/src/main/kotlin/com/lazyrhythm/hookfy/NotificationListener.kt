@@ -117,6 +117,22 @@ class NotificationListener : NotificationListenerService() {
                 key = sbn.key
             )
 
+            // Send webhook immediately (runs in background thread)
+            // This ensures webhook is sent even when Flutter app is not running
+            if (dbId > 0) {
+                val webhookSender = WebhookSender(applicationContext)
+                webhookSender.sendWebhook(
+                    notificationId = dbId,
+                    packageName = packageName,
+                    appName = appName,
+                    title = title,
+                    text = text,
+                    subText = subText,
+                    bigText = bigText,
+                    timestamp = sbn.postTime
+                )
+            }
+
             // Create notification data JSON (include database ID)
             val notificationData = JSONObject().apply {
                 put("id", dbId.toInt()) // Use database ID instead of sbn.id
@@ -133,8 +149,7 @@ class NotificationListener : NotificationListenerService() {
             Log.d(TAG, "Notification received and saved: $notificationData")
 
             // Broadcast to Flutter app for real-time UI updates
-            // This will only work when the app is running, but that's OK
-            // because the notification is already saved to the database
+            // Flutter layer no longer sends webhooks - only updates UI
             val intent = Intent(ACTION_NOTIFICATION_RECEIVED).apply {
                 putExtra(EXTRA_NOTIFICATION_DATA, notificationData.toString())
             }

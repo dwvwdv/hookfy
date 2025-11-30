@@ -36,23 +36,10 @@ class NotificationService {
             }
 
             // Note: Notification is already saved to database in native layer (NotificationListener.kt)
-            // No need to save again here to avoid duplicates
+            // Webhook is also sent automatically in native layer (WebhookSender.kt)
+            // Flutter layer only handles UI updates and manual retry
 
-            // Send to webhook (only if webhook is enabled)
-            if (PreferencesService.instance.getWebhookEnabled()) {
-              final success = await WebhookService.instance.sendNotification(notification);
-
-              // If webhook failed and we have a notification ID, send failure notification
-              if (!success && notification.id != null) {
-                await _sendWebhookFailureNotification(
-                  notification.id!,
-                  notification.appName,
-                  notification.title,
-                );
-              }
-            }
-
-            // Notify listeners
+            // Notify listeners for UI updates
             _notificationController.add(notification);
           }
         } catch (e) {
