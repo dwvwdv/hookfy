@@ -43,6 +43,7 @@ class _AppFilterRulesPageState extends State<AppFilterRulesPage> {
         builder: (context) => FilterRuleEditorPage(
           rule: newRule,
           appName: widget.appConfig.appName,
+          packageName: widget.appConfig.packageName,
           onSave: (updatedRule) {
             setState(() {
               _filterRules.add(updatedRule);
@@ -61,6 +62,7 @@ class _AppFilterRulesPageState extends State<AppFilterRulesPage> {
         builder: (context) => FilterRuleEditorPage(
           rule: _filterRules[index],
           appName: widget.appConfig.appName,
+          packageName: widget.appConfig.packageName,
           onSave: (updatedRule) {
             setState(() {
               _filterRules[index] = updatedRule;

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import '../models/filter_condition.dart';
+import '../models/notification_model.dart';
+import '../services/database_service.dart';
 
-/// 過濾規則編輯器頁面
+/// 過濾規則編輯器頁面（帶即時預覽）
 class FilterRuleEditorPage extends StatefulWidget {
   final FilterRule rule;
   final String appName;
+  final String packageName;
   final Function(FilterRule) onSave;
 
   const FilterRuleEditorPage({
     super.key,
     required this.rule,
     required this.appName,
+    required this.packageName,
     required this.onSave,
   });
 
@@ -22,6 +26,10 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
   late TextEditingController _nameController;
   late List<FilterCondition> _conditions;
   late List<PlaceholderExtractor> _extractors;
+
+  List<NotificationModel> _recentNotifications = [];
+  NotificationModel? _selectedNotification;
+  bool _isLoadingNotifications = false;
 
   final List<String> _fieldOptions = [
     'title',
@@ -67,12 +75,38 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
     _nameController = TextEditingController(text: widget.rule.name);
     _conditions = List.from(widget.rule.conditions);
     _extractors = List.from(widget.rule.extractors);
+    _loadRecentNotifications();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadRecentNotifications() async {
+    setState(() {
+      _isLoadingNotifications = true;
+    });
+
+    try {
+      final notifications = await DatabaseService.instance.getNotificationsByPackage(
+        widget.packageName,
+        limit: 10,
+      );
+      setState(() {
+        _recentNotifications = notifications;
+        if (notifications.isNotEmpty) {
+          _selectedNotification = notifications.first;
+        }
+      });
+    } catch (e) {
+      print('Error loading notifications: $e');
+    } finally {
+      setState(() {
+        _isLoadingNotifications = false;
+      });
+    }
   }
 
   void _saveRule() {
@@ -106,6 +140,7 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
         fieldLabels: _fieldLabels,
         operatorOptions: _operatorOptions,
         operatorLabels: _operatorLabels,
+        testNotification: _selectedNotification,
       ),
     );
   }
@@ -124,6 +159,7 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
         fieldLabels: _fieldLabels,
         operatorOptions: _operatorOptions,
         operatorLabels: _operatorLabels,
+        testNotification: _selectedNotification,
       ),
     );
   }
@@ -135,6 +171,13 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
   }
 
   void _addExtractor() {
+    if (_selectedNotification == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('請先選擇一條測試通知')),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) => _ExtractorEditorDialog(
@@ -145,11 +188,19 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
         },
         fieldOptions: _fieldOptions,
         fieldLabels: _fieldLabels,
+        testNotification: _selectedNotification!,
       ),
     );
   }
 
   void _editExtractor(int index) {
+    if (_selectedNotification == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('請先選擇一條測試通知')),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) => _ExtractorEditorDialog(
@@ -161,6 +212,7 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
         },
         fieldOptions: _fieldOptions,
         fieldLabels: _fieldLabels,
+        testNotification: _selectedNotification!,
       ),
     );
   }
@@ -187,6 +239,92 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 測試通知選擇器
+          Card(
+            color: Colors.blue.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.science, color: Colors.blue.shade700),
+                      const SizedBox(width: 8),
+                      Text(
+                        '測試通知',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_isLoadingNotifications)
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '選擇一條近期通知作為測試數據，用於預覽正則表達式的匹配效果',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_recentNotifications.isEmpty && !_isLoadingNotifications)
+                    const Text(
+                      '暫無近期通知記錄',
+                      style: TextStyle(color: Colors.grey),
+                    )
+                  else if (_recentNotifications.isNotEmpty)
+                    DropdownButtonFormField<NotificationModel>(
+                      value: _selectedNotification,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        fillColor: Colors.white,
+                        filled: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      isExpanded: true,
+                      items: _recentNotifications.map((notification) {
+                        return DropdownMenuItem(
+                          value: notification,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                notification.title.isEmpty ? '(無標題)' : notification.title,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                notification.text,
+                                style: const TextStyle(fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedNotification = value;
+                        });
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
           // 規則名稱
           TextField(
             controller: _nameController,
@@ -341,7 +479,7 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
   }
 }
 
-/// 條件編輯對話框
+/// 條件編輯對話框（帶測試通知預覽）
 class _ConditionEditorDialog extends StatefulWidget {
   final FilterCondition? condition;
   final Function(FilterCondition) onSave;
@@ -349,6 +487,7 @@ class _ConditionEditorDialog extends StatefulWidget {
   final Map<String, String> fieldLabels;
   final List<String> operatorOptions;
   final Map<String, String> operatorLabels;
+  final NotificationModel? testNotification;
 
   const _ConditionEditorDialog({
     this.condition,
@@ -357,6 +496,7 @@ class _ConditionEditorDialog extends StatefulWidget {
     required this.fieldLabels,
     required this.operatorOptions,
     required this.operatorLabels,
+    this.testNotification,
   });
 
   @override
@@ -367,6 +507,7 @@ class _ConditionEditorDialogState extends State<_ConditionEditorDialog> {
   late String _selectedField;
   late String _selectedOperator;
   late TextEditingController _valueController;
+  bool _testResult = false;
 
   @override
   void initState() {
@@ -374,12 +515,75 @@ class _ConditionEditorDialogState extends State<_ConditionEditorDialog> {
     _selectedField = widget.condition?.field ?? widget.fieldOptions.first;
     _selectedOperator = widget.condition?.operator ?? widget.operatorOptions.first;
     _valueController = TextEditingController(text: widget.condition?.value ?? '');
+    _valueController.addListener(_testCondition);
+    _testCondition();
   }
 
   @override
   void dispose() {
     _valueController.dispose();
     super.dispose();
+  }
+
+  String _getFieldValue(String field) {
+    if (widget.testNotification == null) return '';
+    switch (field) {
+      case 'title':
+        return widget.testNotification!.title;
+      case 'text':
+        return widget.testNotification!.text;
+      case 'bigText':
+        return widget.testNotification!.bigText;
+      case 'subText':
+        return widget.testNotification!.subText;
+      case 'appName':
+        return widget.testNotification!.appName;
+      case 'packageName':
+        return widget.testNotification!.packageName;
+      default:
+        return '';
+    }
+  }
+
+  void _testCondition() {
+    if (widget.testNotification == null || _valueController.text.isEmpty) {
+      setState(() => _testResult = false);
+      return;
+    }
+
+    final fieldValue = _getFieldValue(_selectedField);
+    final testValue = _valueController.text;
+
+    bool matches = false;
+    try {
+      switch (_selectedOperator) {
+        case 'contains':
+          matches = fieldValue.contains(testValue);
+          break;
+        case 'notContains':
+          matches = !fieldValue.contains(testValue);
+          break;
+        case 'equals':
+          matches = fieldValue == testValue;
+          break;
+        case 'notEquals':
+          matches = fieldValue != testValue;
+          break;
+        case 'startsWith':
+          matches = fieldValue.startsWith(testValue);
+          break;
+        case 'endsWith':
+          matches = fieldValue.endsWith(testValue);
+          break;
+        case 'matches':
+          matches = RegExp(testValue).hasMatch(fieldValue);
+          break;
+      }
+    } catch (e) {
+      matches = false;
+    }
+
+    setState(() => _testResult = matches);
   }
 
   @override
@@ -391,6 +595,49 @@ class _ConditionEditorDialogState extends State<_ConditionEditorDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 測試通知預覽
+            if (widget.testNotification != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _testResult ? Colors.green.shade50 : Colors.grey.shade100,
+                  border: Border.all(
+                    color: _testResult ? Colors.green : Colors.grey,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _testResult ? Icons.check_circle : Icons.cancel,
+                          color: _testResult ? Colors.green : Colors.grey,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _testResult ? '✓ 條件匹配' : '✗ 條件不匹配',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _testResult ? Colors.green.shade700 : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '測試值: ${_getFieldValue(_selectedField)}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             const Text('字段', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
@@ -404,7 +651,10 @@ class _ConditionEditorDialogState extends State<_ConditionEditorDialog> {
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  setState(() => _selectedField = value);
+                  setState(() {
+                    _selectedField = value;
+                    _testCondition();
+                  });
                 }
               },
             ),
@@ -422,7 +672,10 @@ class _ConditionEditorDialogState extends State<_ConditionEditorDialog> {
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  setState(() => _selectedOperator = value);
+                  setState(() {
+                    _selectedOperator = value;
+                    _testCondition();
+                  });
                 }
               },
             ),
@@ -470,18 +723,20 @@ class _ConditionEditorDialogState extends State<_ConditionEditorDialog> {
   }
 }
 
-/// 提取器編輯對話框
+/// 提取器編輯對話框（帶即時預覽）
 class _ExtractorEditorDialog extends StatefulWidget {
   final PlaceholderExtractor? extractor;
   final Function(PlaceholderExtractor) onSave;
   final List<String> fieldOptions;
   final Map<String, String> fieldLabels;
+  final NotificationModel testNotification;
 
   const _ExtractorEditorDialog({
     this.extractor,
     required this.onSave,
     required this.fieldOptions,
     required this.fieldLabels,
+    required this.testNotification,
   });
 
   @override
@@ -494,6 +749,10 @@ class _ExtractorEditorDialogState extends State<_ExtractorEditorDialog> {
   late TextEditingController _patternController;
   late TextEditingController _groupController;
 
+  String? _extractedValue;
+  String? _errorMessage;
+  List<String> _allGroups = [];
+
   @override
   void initState() {
     super.initState();
@@ -501,6 +760,10 @@ class _ExtractorEditorDialogState extends State<_ExtractorEditorDialog> {
     _selectedField = widget.extractor?.sourceField ?? widget.fieldOptions.first;
     _patternController = TextEditingController(text: widget.extractor?.pattern ?? '');
     _groupController = TextEditingController(text: '${widget.extractor?.group ?? 1}');
+
+    _patternController.addListener(_testExtraction);
+    _groupController.addListener(_testExtraction);
+    _testExtraction();
   }
 
   @override
@@ -511,75 +774,258 @@ class _ExtractorEditorDialogState extends State<_ExtractorEditorDialog> {
     super.dispose();
   }
 
+  String _getFieldValue(String field) {
+    switch (field) {
+      case 'title':
+        return widget.testNotification.title;
+      case 'text':
+        return widget.testNotification.text;
+      case 'bigText':
+        return widget.testNotification.bigText;
+      case 'subText':
+        return widget.testNotification.subText;
+      case 'appName':
+        return widget.testNotification.appName;
+      case 'packageName':
+        return widget.testNotification.packageName;
+      default:
+        return '';
+    }
+  }
+
+  void _testExtraction() {
+    final pattern = _patternController.text.trim();
+    if (pattern.isEmpty) {
+      setState(() {
+        _extractedValue = null;
+        _errorMessage = null;
+        _allGroups = [];
+      });
+      return;
+    }
+
+    try {
+      final fieldValue = _getFieldValue(_selectedField);
+      final regex = RegExp(pattern);
+      final match = regex.firstMatch(fieldValue);
+
+      if (match != null) {
+        final groupIndex = int.tryParse(_groupController.text.trim()) ?? 1;
+        final safeGroupIndex = groupIndex.clamp(0, match.groupCount);
+
+        setState(() {
+          _extractedValue = match.group(safeGroupIndex);
+          _errorMessage = null;
+          _allGroups = List.generate(
+            match.groupCount + 1,
+            (i) => match.group(i) ?? '',
+          );
+        });
+      } else {
+        setState(() {
+          _extractedValue = null;
+          _errorMessage = '無匹配結果';
+          _allGroups = [];
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _extractedValue = null;
+        _errorMessage = '正則表達式錯誤: ${e.toString()}';
+        _allGroups = [];
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final fieldValue = _getFieldValue(_selectedField);
+
     return AlertDialog(
       title: Text(widget.extractor == null ? '添加提取器' : '編輯提取器'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('名稱', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: '例如：amount、currency',
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 即時預覽區域
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _extractedValue != null ? Colors.green.shade50 : Colors.grey.shade100,
+                  border: Border.all(
+                    color: _extractedValue != null ? Colors.green : Colors.grey,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _extractedValue != null ? Icons.check_circle : Icons.info,
+                          color: _extractedValue != null ? Colors.green : Colors.grey,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '即時預覽',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _extractedValue != null ? Colors.green.shade700 : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Text(
+                      '測試文本:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        fieldValue.isEmpty ? '(空)' : fieldValue,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_extractedValue != null) ...[
+                      Text(
+                        '✓ 提取結果:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _extractedValue!,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (_allGroups.length > 1) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '所有捕獲組:',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        ..._allGroups.asMap().entries.map((entry) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              '組 ${entry.key}: ${entry.value}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          );
+                        }),
+                      ],
+                    ] else if (_errorMessage != null) ...[
+                      Text(
+                        '✗ $_errorMessage',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text('來源字段', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _selectedField,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              items: widget.fieldOptions.map((field) {
-                return DropdownMenuItem(
-                  value: field,
-                  child: Text(widget.fieldLabels[field] ?? field),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _selectedField = value);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            const Text('正則表達式', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _patternController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: r'例如：(\d+\.?\d*)(USDT|BTC)',
+
+              const SizedBox(height: 16),
+
+              const Text('名稱', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: '例如：amount、currency',
+                ),
               ),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '使用括號 () 來捕獲想提取的內容',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            const Text('捕獲組索引', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _groupController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: '1',
+              const SizedBox(height: 16),
+              const Text('來源字段', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _selectedField,
+                decoration: const InputDecoration(border: OutlineInputBorder()),
+                items: widget.fieldOptions.map((field) {
+                  return DropdownMenuItem(
+                    value: field,
+                    child: Text(widget.fieldLabels[field] ?? field),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedField = value;
+                      _testExtraction();
+                    });
+                  }
+                },
               ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '0 = 整個匹配，1 = 第一個括號，2 = 第二個括號...',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
+              const SizedBox(height: 16),
+              const Text('正則表達式', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _patternController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: r'例如：(\d+\.?\d*)(USDT|BTC)',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '使用括號 () 來捕獲想提取的內容',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              const Text('捕獲組索引', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _groupController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: '1',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '0 = 整個匹配，1 = 第一個括號，2 = 第二個括號...',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
