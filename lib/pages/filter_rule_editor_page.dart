@@ -533,9 +533,9 @@ class _ConditionEditorDialogState extends State<_ConditionEditorDialog> {
       case 'text':
         return widget.testNotification!.text;
       case 'bigText':
-        return widget.testNotification!.bigText;
+        return widget.testNotification!.bigText ?? '';
       case 'subText':
-        return widget.testNotification!.subText;
+        return widget.testNotification!.subText ?? '';
       case 'appName':
         return widget.testNotification!.appName;
       case 'packageName':
@@ -781,9 +781,9 @@ class _ExtractorEditorDialogState extends State<_ExtractorEditorDialog> {
       case 'text':
         return widget.testNotification.text;
       case 'bigText':
-        return widget.testNotification.bigText;
+        return widget.testNotification.bigText ?? '';
       case 'subText':
-        return widget.testNotification.subText;
+        return widget.testNotification.subText ?? '';
       case 'appName':
         return widget.testNotification.appName;
       case 'packageName':
