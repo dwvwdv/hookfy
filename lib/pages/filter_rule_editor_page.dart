@@ -394,30 +394,11 @@ class _FilterRuleEditorPageState extends State<FilterRuleEditorPage> {
                         items: _recentNotifications.map((notification) {
                           return DropdownMenuItem(
                             value: notification,
-                            child: SizedBox(
-                              height: 56,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    notification.title.isEmpty ? '(無標題)' : notification.title,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    notification.text,
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+                            child: Text(
+                              notification.title.isEmpty ? '(無標題)' : notification.title,
+                              style: const TextStyle(fontSize: 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           );
                         }).toList(),
